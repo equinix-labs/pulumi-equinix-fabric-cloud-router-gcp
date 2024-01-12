@@ -1,0 +1,4 @@
+pulumi>=3.0.0,<4.0.0
+pulumi_equinix==0.6.0
+pulumi_google_native>=0.32.0
+google-cloud-compute>=1.15.0

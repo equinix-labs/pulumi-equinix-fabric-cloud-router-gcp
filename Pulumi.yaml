@@ -1,0 +1,10 @@
+name: equinix-fabric-cloud-router
+runtime: python
+main: __main__.py
+description: An Equinix Fabric Cloud Router instance
+config:
+  accountNum:
+    type: integer
+  metro:
+    type: string
+    default: FR
