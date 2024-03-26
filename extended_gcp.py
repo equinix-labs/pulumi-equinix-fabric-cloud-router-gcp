@@ -1,4 +1,5 @@
 import pulumi
+import time
 from google.cloud import compute_v1
 from typing import Tuple, Optional
 
@@ -56,22 +57,38 @@ class CloudRouterPeerConfig(pulumi.ComponentResource):
         return self.compute_client.patch(request=update_request)
 
     def __fetch_router_info(self, router_name: str, region: str, project_id: str) -> dict:
-        router = self.__get_router(router_name, region, project_id)
+        retries = 20
+        for attempt in range(retries):
+            try:
+                router = self.__get_router(router_name, region, project_id)
 
-        if not router.interfaces or not router.bgp_peers:
-            raise ValueError(f"Router '{router_name}' missing required interfaces or BGP peers")
+                if not router.interfaces or not router.bgp_peers:
+                    raise ValueError(f"Router '{router_name}' missing required interfaces or BGP peers")
 
-        gcp_router_ip_cidr = router.interfaces[0].ip_range
-        equinix_router_ip = router.bgp_peers[0].peer_ip_address
+                gcp_router_ip_cidr = router.interfaces[0].ip_range
+                equinix_router_ip = router.bgp_peers[0].peer_ip_address
 
-        gcp_router_ip, _ = self.__parse_cidr(gcp_router_ip_cidr)
-        equinix_router_ip_with_mask = self.__append_subnet_mask(equinix_router_ip, _)
+                if not gcp_router_ip_cidr or not equinix_router_ip:
+                    raise ValueError("Empty IP range or peer IP address")
 
-        return {
-            'asn': router.bgp.asn,
-            'gcp_router_ip': gcp_router_ip,
-            'equinix_router_ip': equinix_router_ip_with_mask
-        }
+                gcp_router_ip, _ = self.__parse_cidr(gcp_router_ip_cidr)
+                equinix_router_ip_with_mask = self.__append_subnet_mask(equinix_router_ip, _)
+
+                return {
+                    'asn': router.bgp.asn,
+                    'gcp_router_ip': gcp_router_ip,
+                    'equinix_router_ip': equinix_router_ip_with_mask
+                }
+
+            except ValueError as ve:
+                if attempt == retries - 1:
+                    raise ve
+                else:
+                    pulumi.log.warn(f"Attempt {attempt + 1}/{retries} failed: {str(ve)}")
+                    time.sleep(10)
+
+        # If all retries failed, raise an error
+        raise RuntimeError(f"Failed to fetch router info after {retries} attempts")
 
     def __get_router(self, router_name: str, region: str, project_id: str) -> compute_v1.Router:
         """
