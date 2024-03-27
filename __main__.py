@@ -14,6 +14,7 @@ project_id = config.require("projectId")
 notification_emails = config.require_object("notificationEmails")
 equinix_metro = config.get("metro") or "FR"
 speed_in_mbps = config.get_int("speedInMbps") or 100
+purchase_order_num = config.get("purchaseOrderNum") or "1234"
 gcp_project = config.require("gcpProject")
 gcp_region = config.get("gcpRegion") or "europe-west3"
 
@@ -58,6 +59,9 @@ fabric_cloud_router = equinix.fabric.CloudRouter(
     package=equinix.fabric.CloudRouterPackageArgs(code="STANDARD"),
     notifications=[equinix.fabric.CloudRouterNotificationArgs(
         type="ALL", emails=notification_emails)],
+    order=equinix.fabric.CloudRouterOrderArgs(
+        purchase_order_number=purchase_order_num,
+    ),
     account=equinix.fabric.CloudRouterAccountArgs(account_number=account_num),
     project=equinix.fabric.CloudRouterProjectArgs(project_id=project_id),
     opts=pulumi.ResourceOptions(
@@ -81,6 +85,9 @@ fabric_connection = equinix.fabric.Connection("connection",
     type="IP_VC",
     notifications=[equinix.fabric.ConnectionNotificationArgs(
         type="ALL", emails=notification_emails)],
+    order=equinix.fabric.ConnectionOrderArgs(
+        purchase_order_number=purchase_order_num,
+    ),
     bandwidth=speed_in_mbps,
     redundancy=equinix.fabric.ConnectionRedundancyArgs(priority="PRIMARY"),
     a_side=equinix.fabric.ConnectionASideArgs(
@@ -116,7 +123,7 @@ fabric_connection = equinix.fabric.Connection("connection",
 gcp_peer_config = fabric_connection.id.apply(
     lambda _: CloudRouterPeerConfig(
         'peerConfig',
-        'pulumi-demo-fcr-gcp',
+        gcp_cloud_router.name,
         gcp_region,
         gcp_project,
         fabric_cloud_router.equinix_asn
@@ -125,6 +132,7 @@ gcp_peer_config = fabric_connection.id.apply(
 
 # Configure bgp in Equinix Fabric side
 routing_protocol = equinix.fabric.RoutingProtocol("RoutingProtocol",
+    opts=pulumi.ResourceOptions(custom_timeouts=pulumi.CustomTimeouts(create='30m')),
     connection_uuid=fabric_connection.id,
     name="FabricToGCPRoutingProtocol",
     type="BGP",
