@@ -70,8 +70,8 @@ fabric_cloud_router = equinix.fabric.CloudRouter(
     )
 )
 
-# Service Profile lookup
-service_profile = equinix.fabric.get_service_profiles(
+# Service Profile lookup - Google Cloud
+service_profile_gcp = equinix.fabric.get_service_profiles(
     filter=equinix.fabric.GetServiceProfilesFilterArgs(
         property="/name",
         operator="=",
@@ -79,8 +79,8 @@ service_profile = equinix.fabric.get_service_profiles(
     ),
 )
 
-# Fabric Connection creation
-fabric_connection = equinix.fabric.Connection("connection",
+# Fabric Connection creation - Google Cloud
+fabric_connection_gcp = equinix.fabric.Connection("connection",
     name="pulumi-demo-fcr-gcp",
     type="IP_VC",
     notifications=[equinix.fabric.ConnectionNotificationArgs(
@@ -104,8 +104,8 @@ fabric_connection = equinix.fabric.Connection("connection",
             authentication_key=gcp_vlan_attachment.pairing_key,
             seller_region=gcp_region,
             profile=equinix.fabric.ConnectionZSideAccessPointProfileArgs(
-                type=service_profile.data[0].type,
-                uuid=service_profile.data[0].uuid,
+                type=service_profile_gcp.data[0].type,
+                uuid=service_profile_gcp.data[0].uuid,
             ),
             location=equinix.fabric.ConnectionZSideAccessPointLocationArgs(
                 metro_code=equinix_metro,
@@ -120,7 +120,7 @@ fabric_connection = equinix.fabric.Connection("connection",
 
 # Configure bgp peer ASN (Equinix ASN) in Google Cloud Router
 # Initialize CloudRouterPeerConfig only after the dependencies are ready
-gcp_peer_config = fabric_connection.id.apply(
+gcp_peer_config = fabric_connection_gcp.id.apply(
     lambda _: CloudRouterPeerConfig(
         'peerConfig',
         gcp_cloud_router.name,
@@ -131,25 +131,33 @@ gcp_peer_config = fabric_connection.id.apply(
 )
 
 # Configure bgp in Equinix Fabric side
-routing_protocol = equinix.fabric.RoutingProtocol("RoutingProtocol",
-    opts=pulumi.ResourceOptions(custom_timeouts=pulumi.CustomTimeouts(create='30m')),
-    connection_uuid=fabric_connection.id,
-    name="FabricToGCPRoutingProtocol",
+routing_protocol_direct_gcp = equinix.fabric.RoutingProtocol("RoutingProtocolDirect",
+    name="FabricToGCPRoutingProtocolDirect",
+    type="DIRECT",
+    connection_uuid=fabric_connection_gcp.id,
+    direct_ipv4=equinix.fabric.RoutingProtocolDirectIpv4Args(
+        equinix_iface_ip= gcp_peer_config.equinix_router_ip
+    )
+)
+
+routing_protocol_bgp_gcp = equinix.fabric.RoutingProtocol("RoutingProtocolBGP",
+    opts=pulumi.ResourceOptions(
+        depends_on=[routing_protocol_direct_gcp],
+    ),
     type="BGP",
+    connection_uuid=fabric_connection_gcp.id,
+    name="FabricToGCPRoutingProtocolBGP",
     customer_asn=gcp_peer_config.gcp_asn,
     bgp_ipv4=equinix.fabric.RoutingProtocolBgpIpv4Args(
         customer_peer_ip=gcp_peer_config.gcp_router_ip
     ),
-    direct_ipv4=equinix.fabric.RoutingProtocolDirectIpv4Args(
-        equinix_iface_ip=gcp_peer_config.equinix_router_ip
-    )
 )
 
 # Export relevant data
-pulumi.export("fabric_routing_protocol_state", routing_protocol.state)
-pulumi.export("fabric_cloud_router_id", fabric_cloud_router.id)
-pulumi.export("fabric_connection_id", fabric_connection.id)
-pulumi.export("equinix_cloud_router_ip", gcp_peer_config.equinix_router_ip)
+pulumi.export("equinix_fabric_routing_protocol_gcp_bgp_state", routing_protocol_bgp_gcp.state)
+pulumi.export("equinix_fabric_connection_gcp_id", fabric_connection_gcp.id)
+pulumi.export("equinix_fabric_cloud_router_id", fabric_cloud_router.id)
+pulumi.export("equinix_fabric_cloud_router_gcp_ip", gcp_peer_config.equinix_router_ip)
 pulumi.export("equinix_asn", gcp_peer_config.equinix_asn)
 pulumi.export("gcp_cloud_router_ip", gcp_peer_config.gcp_router_ip)
 pulumi.export("gcp_asn", gcp_peer_config.gcp_asn)
