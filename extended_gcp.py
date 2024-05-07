@@ -71,9 +71,8 @@ class CloudRouterPeerConfig(pulumi.ComponentResource):
                 if not gcp_router_ip_cidr or not equinix_router_ip:
                     raise ValueError("Empty IP range or peer IP address")
 
-                gcp_router_ip, _ = self.__parse_cidr(gcp_router_ip_cidr)
-                equinix_router_ip_with_mask = self.__append_subnet_mask(equinix_router_ip, _)
-
+                gcp_router_ip, mask = self.__parse_cidr(gcp_router_ip_cidr)
+                equinix_router_ip_with_mask = self.__append_subnet_mask(equinix_router_ip, mask)
                 return {
                     'asn': router.bgp.asn,
                     'gcp_router_ip': gcp_router_ip,
