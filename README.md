@@ -1,11 +1,10 @@
 # Pulumi Template to Connect Equinix Cloud Router with Google Cloud Platform via Equinix Fabric
 
+<!-- TODO abstract -->
+
 ![](https://img.shields.io/badge/Stability-Experimental-red.svg)
 
-//TODO
-
 This repository is [Experimental](https://github.com/packethost/standards/blob/master/experimental-statement.md) meaning that it's based on untested ideas or techniques and not yet established or finalized or involves a radically new and innovative style! This means that support is best effort (at best!) and we strongly encourage you to NOT use this in production.
-
 
 ## Prerequisites
 
@@ -30,6 +29,7 @@ Create a new Pulumi project:
 5. Deploy the stack: `pulumi up`
 6. Follow the instructions printed in the console to complete the deployment.
 
+<!-- TODO
 ## Configuration Variables
 
 The following table lists the configuration variables for both templates:
@@ -37,7 +37,7 @@ The following table lists the configuration variables for both templates:
 | Variable | Description | Default Value |
 |----------|-------------|---------------|
 
-// TODO
+-->
 
 To add them you can use `pulumi config set` command:
 
