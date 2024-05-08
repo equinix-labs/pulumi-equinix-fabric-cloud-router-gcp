@@ -1,10 +1,6 @@
-# Pulumi Template to Connect Equinix Cloud Router with Google Cloud Platform via Equinix Fabric
+# Pulumi Template to Connect Equinix Fabric Cloud Router (FCR) with Google Cloud Platform via Equinix Fabric
 
-<!-- TODO abstract -->
-
-![](https://img.shields.io/badge/Stability-Experimental-red.svg)
-
-This repository is [Experimental](https://github.com/packethost/standards/blob/master/experimental-statement.md) meaning that it's based on untested ideas or techniques and not yet established or finalized or involves a radically new and innovative style! This means that support is best effort (at best!) and we strongly encourage you to NOT use this in production.
+This Pulumi template sets up an end-to-end Layer 2 connection using Google Cloud Interconnect through Equinix Fabric from a new Equinix Fabric Cloud Router (FCR) to a Google Cloud Router. As a peculiarity, this template uses the python library google-cloud-compute to cover some functionality not available (May 2024) in the Pulumi provider for GCP, necessary to complete the configuration and establish the BGP session.
 
 ## Prerequisites
 
@@ -29,20 +25,30 @@ Create a new Pulumi project:
 5. Deploy the stack: `pulumi up`
 6. Follow the instructions printed in the console to complete the deployment.
 
-<!-- TODO
 ## Configuration Variables
 
 The following table lists the configuration variables for both templates:
 
-| Variable | Description | Default Value |
-|----------|-------------|---------------|
+| Variable | Description | Type | Default | Required |
+|----------|-------------|------|---------|----------|
+| accountNum | Equinix Fabric billing account number | `integer` | n/a | yes |
+| projectId | Equinix Fabric project Id | `string` | n/a | yes |
+| notificationEmails | Array of contact emails | `list(string)` | n/a | yes |
+| gcpProject | The default GCP project to manage resources in | `string` | n/a | yes |
+| metro | Two-letter code indicating the metropolitan area for the new resources | `string` | "FR" | no |
+| speedInMbps | Equinx Fabric connection bandwidth in Mbps | `integer` | 100 | no |
+| purchaseOrderNum | Equinix Fabric Purchase order number | `string` | "1234" | no |
+| gcpRegion | Region where the GCP resources resides | `string` | "europe-west3" | no |
 
--->
 
 To add them you can use `pulumi config set` command:
 
 ```sh
 pulumi config set projectId <EQUINIX_FABRIC_PROJECT_ID>
+$ pulumi config set accountNum 1234
+$ pulumi config set projectId 5678
+$ pulumi config set gcpProject myGCPProject
+$ pulumi config set --path 'notificationEmails[0]' example@equinix.com
 ```
 
 ## Customization
