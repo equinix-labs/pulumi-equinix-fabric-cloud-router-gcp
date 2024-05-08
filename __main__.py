@@ -19,16 +19,14 @@ gcp_project = config.require("gcpProject")
 gcp_region = config.get("gcpRegion") or "europe-west3"
 
 # Google Cloud VPC Network
-gcp_vpc_network = gcp.compute.v1.Network(
-    "vpcNetwork",
+gcp_vpc_network = gcp.compute.v1.Network("vpc-network",
     project=gcp_project,
     name="pulumi-demo-network",
     auto_create_subnetworks=True
 )
 
 # Google Cloud Router
-gcp_cloud_router = gcp.compute.v1.Router(
-    "cloudRouter",
+gcp_cloud_router = gcp.compute.v1.Router("cloud-router",
     project=gcp_project,
     region=gcp_region,
     name="pulumi-demo-router",
@@ -39,8 +37,7 @@ gcp_cloud_router = gcp.compute.v1.Router(
 )
 
 # Google Cloud VLAN Attachment (Interconnect)
-gcp_vlan_attachment = gcp.compute.v1.InterconnectAttachment(
-    "vlanAttachment",
+gcp_vlan_attachment = gcp.compute.v1.InterconnectAttachment("vlan-attachment",
     project=gcp_project,
     region=gcp_region,
     name="pulumi-demo-vlan-attach",
@@ -51,8 +48,7 @@ gcp_vlan_attachment = gcp.compute.v1.InterconnectAttachment(
 )
 
 # Equinix Fabric CloudRouter
-fabric_cloud_router = equinix.fabric.CloudRouter(
-    "cloudRouter",
+fabric_cloud_router = equinix.fabric.CloudRouter("cloud-router",
     name="pulumi-demo-fcr-gcp",
     type="XF_ROUTER",
     location=equinix.fabric.CloudRouterLocationArgs(metro_code=equinix_metro),
@@ -131,7 +127,10 @@ gcp_peer_config = fabric_connection_gcp.id.apply(
 )
 
 # Configure bgp in Equinix Fabric side
-routing_protocol_direct_gcp = equinix.fabric.RoutingProtocol("RoutingProtocolDirect",
+routing_protocol_direct_gcp = equinix.fabric.RoutingProtocol("rp-direct",
+    opts=pulumi.ResourceOptions(
+        ignore_changes=["name"]
+    ),
     name="FabricToGCPRoutingProtocolDirect",
     type="DIRECT",
     connection_uuid=fabric_connection_gcp.id,
@@ -140,9 +139,10 @@ routing_protocol_direct_gcp = equinix.fabric.RoutingProtocol("RoutingProtocolDir
     )
 )
 
-routing_protocol_bgp_gcp = equinix.fabric.RoutingProtocol("RoutingProtocolBGP",
+routing_protocol_bgp_gcp = equinix.fabric.RoutingProtocol("rp-bgp",
     opts=pulumi.ResourceOptions(
         depends_on=[routing_protocol_direct_gcp],
+        ignore_changes=["name"]
     ),
     type="BGP",
     connection_uuid=fabric_connection_gcp.id,

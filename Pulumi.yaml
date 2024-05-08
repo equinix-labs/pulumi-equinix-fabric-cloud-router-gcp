@@ -1,10 +1,35 @@
-name: equinix-fabric-cloud-router
+name: equinix-fabric-cloud-router-2-gcp
 runtime: python
 main: __main__.py
-description: An Equinix Fabric Cloud Router instance
+description: An Equinix Fabric Layer 2 connection from a new Fabric Cloud Router (FCR) to a Google Cloud Router
 config:
   accountNum:
     type: integer
+    description: Equinix Fabric billing account number
+  projectId:
+    type: string
+    description: Equinix Fabric project Id
+  notificationEmails:
+    type: array
+    items:
+      type: string
+    description: List(string) of contact emails
+  gcpProject:
+    type: string
+    description: The default GCP project to manage resources in
   metro:
     type: string
+    description: Two-letter code indicating the metropolitan area for the new resources
     default: FR
+  speedInMbps:
+    type: integer
+    description: Equinx Fabric connection bandwidth in Mbps
+    default: 100
+  purchaseOrderNum:
+    type: integer
+    description: Equinix Fabric Purchase order number
+    default: "1234"
+  gcpRegion:
+    type: string
+    description: Region where the GCP resources resides
+    default: europe-west3
